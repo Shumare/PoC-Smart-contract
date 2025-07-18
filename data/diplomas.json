@@ -1,0 +1,22 @@
+[
+  {
+    "name": "Alice",
+    "degree": "Computer Science",
+    "year": 2023
+  },
+  {
+    "name": "Bob",
+    "degree": "Mathematics",
+    "year": 2023
+  },
+  {
+    "name": "Charlie",
+    "degree": "Physics",
+    "year": 2023
+  },
+  {
+    "name": "Diana",
+    "degree": "Biology",
+    "year": 2023
+  }
+]
