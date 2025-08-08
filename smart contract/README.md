@@ -25,6 +25,8 @@ This project demonstrates how to simulate and interact with a blockchain using H
    node scripts/blockchainSimulation.js
    ```
 
+   This script also launches an in-memory IPFS node, uploads a sample diploma, and stores the resulting CID on-chain.
+
 ## 5. Contrats autonomes
 - Contracts execute only when a transaction triggers them.
 - To automate behavior, use external scripts or services (cron, keeper, oracles) that send transactions periodically.
@@ -49,4 +51,4 @@ Or run all the above steps automatically with:
   bash scripts/runDemo.sh
   ```
 
-The script will show account balances, send an ETH transfer, compile and deploy `DiplomaContract`, and store/read a simulated diploma IPFS link.
+The script will show account balances, send an ETH transfer, compile and deploy `DiplomaContract`, then upload a diploma to IPFS, store its CID on-chain and retrieve the diploma content from IPFS.
