@@ -1,10 +1,8 @@
-const fs = require("fs");
-const path = require("path");
-const solc = require("solc");
 const { ethers } = require("ethers");
+const { createIpfsNode, addJson, catToString } = require("./ipfsClient");
+const { deployDiplomaContract } = require("./deployDiploma");
 
 async function main() {
-  // Connexion au nœud local Hardhat
   const provider = new ethers.providers.JsonRpcProvider("http://127.0.0.1:8545");
   const accounts = await provider.listAccounts();
   const deployer = provider.getSigner(accounts[0]);
@@ -12,11 +10,9 @@ async function main() {
 
   console.log("Deployer:", accounts[0]);
   console.log("User:", accounts[1]);
-
   console.log("Deployer balance:", (await deployer.getBalance()).toString());
   console.log("User balance:", (await user.getBalance()).toString());
 
-  // Transaction d'ETH entre comptes
   console.log("\nSending 1 ETH from deployer to user...");
   const tx = await deployer.sendTransaction({
     to: accounts[1],
@@ -27,34 +23,31 @@ async function main() {
   console.log("Deployer balance after:", (await deployer.getBalance()).toString());
   console.log("User balance after:", (await user.getBalance()).toString());
 
-  // Compilation du contrat avec solc
-  const source = fs.readFileSync(path.join(__dirname, "../contracts/DiplomaContract.sol"), "utf8");
-  const input = {
-    language: "Solidity",
-    sources: { "DiplomaContract.sol": { content: source } },
-    settings: { outputSelection: { "*": { "*": ["abi", "evm.bytecode"] } } },
-  };
-  const output = JSON.parse(solc.compile(JSON.stringify(input)));
-  const contract = output.contracts["DiplomaContract.sol"]["DiplomaContract"];
-  const abi = contract.abi;
-  const bytecode = contract.evm.bytecode.object;
+  const ipfs = await createIpfsNode();
 
-  // Déploiement du smart contract
-  const factory = new ethers.ContractFactory(abi, bytecode, deployer);
-  const merkleRoot = ethers.constants.HashZero;
-  const diploma = await factory.deploy(merkleRoot);
-  await diploma.deployed();
+  const diploma = await deployDiplomaContract(deployer);
   console.log("DiplomaContract deployed at:", diploma.address);
 
-  // Interaction avec le contrat
+  const diplomaObject = {
+    name: "student1",
+    degree: "Blockchain 101",
+    year: 2024,
+  };
+  const cid = await addJson(ipfs, diplomaObject);
+  const ipfsLink = `ipfs://${cid.toString()}`;
+
   const leaf = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("student1"));
-  const ipfs = "ipfs://exampleHash";
-  const regTx = await diploma.registerDiploma(leaf, ipfs);
+  const regTx = await diploma.registerDiploma(leaf, ipfsLink);
   await regTx.wait();
-  console.log("Diploma registered");
+  console.log("Diploma registered with IPFS:", ipfsLink);
 
   const stored = await diploma.getDiplomaIpfs(leaf);
   console.log("Stored IPFS:", stored);
+
+  const retrieved = await catToString(ipfs, cid);
+  console.log("Retrieved from IPFS:", retrieved);
+
+  await ipfs.stop();
 }
 
 main().catch((error) => {
